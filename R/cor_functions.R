@@ -90,6 +90,10 @@ foldOS <- function(y, y_hat, folds, y_hat2 = NULL, level = 0.95){
 
     # Calculating OS difference - first yhat vs. second yhat
     diff = cor_os_diff(os_estimate, os_estimate2, inf_folds, inf_folds2)
+    # MJ: added truncation of CI bounds
+    # Truncate the lower and upper CI at -1 and 1
+    diff[2] <- max(min(diff[2], 1), -1)  # lower CI
+    diff[3] <- max(min(diff[3], 1), -1)  # upper CI
     os_diff = data.frame(est = diff[1], LB = diff[2], UB = diff[3])
 
     # Calculating the OS ratio - first yhat vs. second yhat
