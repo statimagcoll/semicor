@@ -1,5 +1,5 @@
 This R package allows users to compute the one-step semiparametric correlation estimator
-for maximum achievable predictive accuracy (MAPA), introduced in Jones et al. (2025). The functions
+for maximum achievable predictive accuracy (MAPA), introduced in [Jones et al. (2025)](https://www.biorxiv.org/content/10.1101/2025.11.26.690778v1). The functions
 assume the user has already run their ML models (using cross-fitting).
 
 The package and documentation is under active development, but the main functionality is available.
