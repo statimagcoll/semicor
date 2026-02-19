@@ -54,7 +54,7 @@ source("/media/disk2/multivariateBWAS/code_for_review/corr_funcs.R")
 #' Vector arguments are accepted. If different length arguments are passed they are dealt with in the usual way of R.
 #' @param y A list of continuous values representing the real outcome values by fold.
 #' @param y_hat A list of continuous values representing the predicted outcome values by fold.
-#' @param folds A vector representing the fold number of the correpsonding y_hat and y value.
+#' @param folds A vector representing the fold number of the corresponding y_hat and y value.
 #' @param y_hat2 A list of continuous values representing the predicted outcome values by fold from a different model.
 #' @param level A number between 0 and 1 representing the confidence level.
 #' @return Returns a list with a data frame of the one-step estimator and its bounds, a vector of the one-step estimate by fold, the sample number, and the confidence level. If y_hat2 is passed as an argument, the one-step esimate for y_hat2 and difference between the one-step estimate for y_hat1 and y_hat2 will be provided.
@@ -292,6 +292,155 @@ split_res
 split_res2 = sampleSplitOS(y, mu, test_fold, mu2)
 split_res2 # Note here that fold estimate matrix is each column is a different fold and each row is a different sample split
 ```
+
+
+# Creating Examples with Online R Studio Datasets
+## Using Neuro Datasets Package
+### Installing data 
+```{r}
+# Setting the seed
+set.seed(123)
+
+# Installing the dataset
+# devtools::install_github("lightbluetitan/neurodatasets")
+
+# Loading in dataset
+library(NeuroDataSets)
+
+# Loading in dataset of interest
+data("OASIS_cross_tbl_df")
+```
+
+### Creating a Ridge Regression Model
+```{r}
+# Cleaning data
+## Data Processing - drop NA before CV
+data_clean = OASIS_cross_tbl_df %>% drop_na(Age) 
+
+## Assigning folds
+folds = 5
+data_clean$fold <- sample(rep(1:folds, length.out = nrow(data_clean)))
+
+## Checking for fold distribution 
+table(data_clean$fold)
+
+# Storage variables
+lambda = c()
+preds_eTIV = c()
+preds_nWBV = c()
+fold <- c()
+test_y_eTIV = c()
+test_y_nWBV = c()
+
+
+# Creating a for loop for 5-fold cross validation
+for(i in 1:folds){
+  # Assigning data
+  test = data_clean %>% filter(fold == i)
+  train = data_clean %>% filter(fold != i)
+  
+  # Creating model data variables 
+  x_var = as.matrix(train[, colnames(data_clean) %in% c("eTIV", "ASF")])
+  y_var = as.matrix(train[, colnames(data_clean) %in% c("Age")])
+  newx = as.matrix(test[, colnames(data_clean) %in% c("eTIV", "ASF")])
+  newy = as.matrix(test[, colnames(data_clean) %in% c("Age")])
+  
+  # Fitting a ridge regression model
+  lambda_seq <- c(
+    seq(10, 1, -1),        # From 10 to 1 (step of 1)
+    seq(0.9, 0.1, -0.1),   # From 0.9 to 0.1 (step of 0.1)
+    seq(0.09, 0.01, -0.01),# From 0.09 to 0.01 (step of 0.01)
+    seq(0.009, 0.001, -0.001), # From 0.009 to 0.001 (step of 0.001)
+    seq(0.0009, 0.0001, -0.0001), # From 0.0009 to 0.0001 (step of 0.0001)
+    seq(0.00009, 0.00001, -0.00001), # From 0.00009 to 0.00001
+    seq(0.000009, 0.000001, -0.000001), # From 0.000009 to 0.000001
+    seq(0.0000009, 0.0000001, -0.0000001), # From 0.0000009 to 0.0000001
+    0
+  )
+  ridgeModel <- cv.glmnet(x_var, y_var, alpha = 0, lambda = lambda_seq)
+  
+  # Getting predictions
+  test$preds = predict(ridgeModel, newx = newx, s = "lambda.min")
+  
+  # Storing values
+  preds_eTIV <- c(preds_eTIV, test$preds)
+  test_y_eTIV = c(test_y_eTIV, newy)
+  fold <- c(fold, rep(i, length(test$preds)))
+  
+  # Storing minimum lambda used
+  lambda = c(lambda, ridgeModel$lambda.min)
+}
+
+
+
+# Creating a for loop for 5-fold cross validation
+for(i in 1:folds){
+  # Assigning data
+  test = data_clean %>% filter(fold == i)
+  train = data_clean %>% filter(fold != i)
+  
+  # Creating model data variables 
+  x_var = as.matrix(train[, colnames(data_clean) %in% c("nWBV", "ASF")])
+  y_var = as.matrix(train[, colnames(data_clean) %in% c("Age")])
+  newx = as.matrix(test[, colnames(data_clean) %in% c("nWBV", "ASF")])
+  newy = as.matrix(test[, colnames(data_clean) %in% c("Age")])
+  
+  # Fitting a ridge regression model
+  lambda_seq <- c(
+    seq(10, 1, -1),        # From 10 to 1 (step of 1)
+    seq(0.9, 0.1, -0.1),   # From 0.9 to 0.1 (step of 0.1)
+    seq(0.09, 0.01, -0.01),# From 0.09 to 0.01 (step of 0.01)
+    seq(0.009, 0.001, -0.001), # From 0.009 to 0.001 (step of 0.001)
+    seq(0.0009, 0.0001, -0.0001), # From 0.0009 to 0.0001 (step of 0.0001)
+    seq(0.00009, 0.00001, -0.00001), # From 0.00009 to 0.00001
+    seq(0.000009, 0.000001, -0.000001), # From 0.000009 to 0.000001
+    seq(0.0000009, 0.0000001, -0.0000001), # From 0.0000009 to 0.0000001
+    0
+  )
+  ridgeModel <- cv.glmnet(x_var, y_var, alpha = 0, lambda = lambda_seq)
+  
+  # Getting predictions
+  test$preds = predict(ridgeModel, newx = newx, s = "lambda.min")
+  
+  # Storing values
+  preds_nWBV <- c(preds_nWBV, test$preds)
+  test_y_nWBV = c(test_y_nWBV, newy)
+  
+  # Storing minimum lambda used
+  lambda = c(lambda, ridgeModel$lambda.min)
+}
+```
+
+### Applying Semicor to Data Predictions
+```{r}
+# Making sure all are a matrix
+preds_eTIV = as.matrix(preds_eTIV)
+preds_nWBV = as.matrix(preds_nWBV)
+fold = as.matrix(fold)
+
+
+# Gathering the estimates with one sample split
+results = sampleSplitOS(test_y_eTIV, preds_eTIV, fold, preds_nWBV)
+```
+
+### Graphing Outputs
+```{r}
+# Subsetting results to only estimates
+toPlot = results$result %>% filter(metric == "yhat1" | metric == "yhat2")
+
+# Plotting results 
+ggplot(toPlot, aes(x = metric, y = est)) +
+  geom_point(position = position_dodge(width = 0.5), size = 3) +
+  geom_errorbar(aes(ymin = LB, ymax = UB),
+                width = 0.2,
+                position = position_dodge(width = 0.5)) +
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 45, hjust=1)) + 
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") 
+```
+
+### Analysis
+From these results, we see there is no significant improvement in Ridge Regression model performance for models using eTIV over nWBV imaging data. 
 
 
 

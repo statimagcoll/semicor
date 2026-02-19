@@ -11,9 +11,9 @@
 
 <meta name="author" content="Ishaan Gadiyar" />
 
-<meta name="date" content="2026-01-07" />
+<meta name="date" content="2026-02-19" />
 
-<title>SemiCor Functions</title>
+<title>MAPAcor Functions</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -1667,9 +1667,9 @@ border-radius: 0px;
 
 
 
-<h1 class="title toc-ignore">SemiCor Functions</h1>
+<h1 class="title toc-ignore">MAPAcor Functions</h1>
 <h4 class="author">Ishaan Gadiyar</h4>
-<h4 class="date">2026-01-07</h4>
+<h4 class="date">2026-02-19</h4>
 
 </div>
 
@@ -1715,6 +1715,26 @@ Validation</h1>
 <div id="estimating-the-os-and-bounds-for-ml-results-by-fold" class="section level2" number="2.1">
 <h2><span class="header-section-number">2.1</span> Estimating the OS and
 bounds for ML results by fold</h2>
+<p>#’ Compute the correlation score and its confidence interval from the
+one-step estimator #’ #’ This function computes the one-step estimaor
+from Jones, Gadiyar, and Vandekar (2025). #’ Vector arguments are
+accepted. If different length arguments are passed they are dealt with
+in the usual way of R. #’ <span class="citation">@param</span> y A list
+of continuous values representing the real outcome values by fold. #’
+<span class="citation">@param</span> y_hat A list of continuous values
+representing the predicted outcome values by fold. #’ <span class="citation">@param</span> folds A vector representing the fold
+number of the corresponding y_hat and y value. #’ <span class="citation">@param</span> y_hat2 A list of continuous values
+representing the predicted outcome values by fold from a different
+model. #’ <span class="citation">@param</span> level A number between 0
+and 1 representing the confidence level. #’ <span class="citation">@return</span> Returns a list with a data frame of the
+one-step estimator and its bounds, a vector of the one-step estimate by
+fold, the sample number, and the confidence level. If y_hat2 is passed
+as an argument, the one-step esimate for y_hat2 and difference between
+the one-step estimate for y_hat1 and y_hat2 will be provided. #’ #’
+<span class="citation">@details</span> The formula for calculating the
+one-step estimator is: #’ #’ #’ <span class="citation">@details</span>
+The formula for calculating the one-step estimator confidence interval
+is: #’ #’ #’ #’ <span class="citation">@export</span></p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co">#&#39; Compute the correlation score and its confidence interval from the one-step estimator</span></span>
 <span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="co">#&#39;</span></span>
 <span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="co">#&#39; This function computes the one-step estimaor from Jones, Gadiyar, and Vandekar (2025).</span></span>
@@ -1735,154 +1755,119 @@ bounds for ML results by fold</h2>
 <span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a><span class="co">#&#39; </span></span>
 <span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a><span class="co">#&#39; @export</span></span>
 <span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a></span>
-<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a><span class="co"># Give list of yhat and yreal outputs by fold</span></span>
-<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a>foldOS <span class="ot">&lt;-</span> <span class="cf">function</span>(y, y_hat, folds, <span class="at">y_hat2 =</span> <span class="cn">NULL</span>, <span class="at">level =</span> <span class="fl">0.95</span>){</span>
-<span id="cb3-23"><a href="#cb3-23" tabindex="-1"></a>  <span class="co"># Sanity Check</span></span>
-<span id="cb3-24"><a href="#cb3-24" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">length</span>(y_hat) <span class="sc">!=</span> <span class="fu">length</span>(y) <span class="sc">|</span> <span class="fu">length</span>(y_hat) <span class="sc">!=</span> <span class="fu">length</span>(folds) <span class="sc">|</span> <span class="fu">length</span>(y) <span class="sc">!=</span> <span class="fu">length</span>(folds)){</span>
-<span id="cb3-25"><a href="#cb3-25" tabindex="-1"></a>    <span class="fu">stop</span>(<span class="st">&quot;y, y_hat, and folds must be of the same length.&quot;</span>)</span>
-<span id="cb3-26"><a href="#cb3-26" tabindex="-1"></a>  }</span>
-<span id="cb3-27"><a href="#cb3-27" tabindex="-1"></a>  </span>
-<span id="cb3-28"><a href="#cb3-28" tabindex="-1"></a>  <span class="co"># Creating storage vector for results and variables</span></span>
-<span id="cb3-29"><a href="#cb3-29" tabindex="-1"></a>  os_folds <span class="ot">=</span> <span class="fu">c</span>()</span>
-<span id="cb3-30"><a href="#cb3-30" tabindex="-1"></a>  inf_folds <span class="ot">=</span> <span class="fu">c</span>()</span>
-<span id="cb3-31"><a href="#cb3-31" tabindex="-1"></a>  n <span class="ot">=</span> <span class="fu">length</span>(y)</span>
-<span id="cb3-32"><a href="#cb3-32" tabindex="-1"></a>  </span>
-<span id="cb3-33"><a href="#cb3-33" tabindex="-1"></a>  <span class="co"># Looping through folds</span></span>
-<span id="cb3-34"><a href="#cb3-34" tabindex="-1"></a>  <span class="cf">for</span>(fold <span class="cf">in</span> <span class="fu">unique</span>(folds)){</span>
-<span id="cb3-35"><a href="#cb3-35" tabindex="-1"></a>    <span class="co"># Calculating and storing OS estimator</span></span>
-<span id="cb3-36"><a href="#cb3-36" tabindex="-1"></a>    os_res <span class="ot">=</span> <span class="fu">cor_os</span>(y_hat[<span class="fu">which</span>(folds <span class="sc">==</span> fold)], y[<span class="fu">which</span>(folds <span class="sc">==</span> fold)])</span>
-<span id="cb3-37"><a href="#cb3-37" tabindex="-1"></a>    os_folds <span class="ot">=</span> <span class="fu">c</span>(os_folds, os_res)</span>
-<span id="cb3-38"><a href="#cb3-38" tabindex="-1"></a>    </span>
-<span id="cb3-39"><a href="#cb3-39" tabindex="-1"></a>    <span class="co"># Calculating the influence vector and storing</span></span>
-<span id="cb3-40"><a href="#cb3-40" tabindex="-1"></a>    inf_res <span class="ot">=</span> <span class="fu">if_logit_sq</span>(y_hat[<span class="fu">which</span>(folds <span class="sc">==</span> fold)], y[<span class="fu">which</span>(folds <span class="sc">==</span> fold)])</span>
-<span id="cb3-41"><a href="#cb3-41" tabindex="-1"></a>    inf_folds <span class="ot">=</span> <span class="fu">c</span>(inf_folds, inf_res)</span>
-<span id="cb3-42"><a href="#cb3-42" tabindex="-1"></a>  }</span>
-<span id="cb3-43"><a href="#cb3-43" tabindex="-1"></a>  </span>
-<span id="cb3-44"><a href="#cb3-44" tabindex="-1"></a>  <span class="co"># Calculating overall OS estimate</span></span>
-<span id="cb3-45"><a href="#cb3-45" tabindex="-1"></a>  os_estimate <span class="ot">=</span> <span class="fu">mean</span>(os_folds, <span class="at">na.rm =</span> T)</span>
-<span id="cb3-46"><a href="#cb3-46" tabindex="-1"></a>  </span>
-<span id="cb3-47"><a href="#cb3-47" tabindex="-1"></a>  <span class="co"># Calculating the bounds</span></span>
-<span id="cb3-48"><a href="#cb3-48" tabindex="-1"></a>  LB_est <span class="ot">=</span> <span class="fu">sqrt</span>(<span class="fu">expit</span>(<span class="fu">logit</span>(os_estimate<span class="sc">^</span><span class="dv">2</span>) <span class="sc">-</span> <span class="fu">qnorm</span>((<span class="dv">1</span> <span class="sc">+</span> level) <span class="sc">/</span> <span class="dv">2</span>)<span class="sc">*</span><span class="fu">sqrt</span>(<span class="fu">var</span>(inf_folds)<span class="sc">/</span>n)))</span>
-<span id="cb3-49"><a href="#cb3-49" tabindex="-1"></a>  UB_est <span class="ot">=</span> <span class="fu">sqrt</span>(<span class="fu">expit</span>(<span class="fu">logit</span>(os_estimate<span class="sc">^</span><span class="dv">2</span>) <span class="sc">-</span> <span class="fu">qnorm</span>((<span class="dv">1</span> <span class="sc">-</span> level) <span class="sc">/</span> <span class="dv">2</span>)<span class="sc">*</span><span class="fu">sqrt</span>(<span class="fu">var</span>(inf_folds)<span class="sc">/</span>n)))</span>
-<span id="cb3-50"><a href="#cb3-50" tabindex="-1"></a>  </span>
-<span id="cb3-51"><a href="#cb3-51" tabindex="-1"></a>  <span class="co"># Formatting fold estimates for output</span></span>
-<span id="cb3-52"><a href="#cb3-52" tabindex="-1"></a>  <span class="fu">names</span>(os_folds) <span class="ot">&lt;-</span> <span class="fu">unique</span>(folds)</span>
-<span id="cb3-53"><a href="#cb3-53" tabindex="-1"></a>  </span>
-<span id="cb3-54"><a href="#cb3-54" tabindex="-1"></a>  <span class="co"># Creating data frame output </span></span>
-<span id="cb3-55"><a href="#cb3-55" tabindex="-1"></a>  estimate <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="at">est =</span> os_estimate, <span class="at">LB =</span> LB_est, <span class="at">UB =</span> UB_est)</span>
-<span id="cb3-56"><a href="#cb3-56" tabindex="-1"></a>    </span>
-<span id="cb3-57"><a href="#cb3-57" tabindex="-1"></a>    </span>
-<span id="cb3-58"><a href="#cb3-58" tabindex="-1"></a>  <span class="cf">if</span>(<span class="sc">!</span><span class="fu">is.null</span>(y_hat2)){</span>
-<span id="cb3-59"><a href="#cb3-59" tabindex="-1"></a>    <span class="co"># Sanity Check</span></span>
-<span id="cb3-60"><a href="#cb3-60" tabindex="-1"></a>    <span class="cf">if</span>(<span class="fu">length</span>(y_hat2) <span class="sc">!=</span> <span class="fu">length</span>(y) <span class="sc">|</span> <span class="fu">length</span>(y_hat2) <span class="sc">!=</span> <span class="fu">length</span>(folds) <span class="sc">|</span> <span class="fu">length</span>(y) <span class="sc">!=</span> <span class="fu">length</span>(folds)){</span>
-<span id="cb3-61"><a href="#cb3-61" tabindex="-1"></a>      <span class="fu">stop</span>(<span class="st">&quot;y, y_hat2, and folds must be of the same length.&quot;</span>)</span>
-<span id="cb3-62"><a href="#cb3-62" tabindex="-1"></a>    }</span>
-<span id="cb3-63"><a href="#cb3-63" tabindex="-1"></a>    </span>
-<span id="cb3-64"><a href="#cb3-64" tabindex="-1"></a>    <span class="co"># Creating storage vector for results and variables</span></span>
-<span id="cb3-65"><a href="#cb3-65" tabindex="-1"></a>    os_folds2 <span class="ot">=</span> <span class="fu">c</span>()</span>
-<span id="cb3-66"><a href="#cb3-66" tabindex="-1"></a>    inf_folds2 <span class="ot">=</span> <span class="fu">c</span>()</span>
-<span id="cb3-67"><a href="#cb3-67" tabindex="-1"></a>    n <span class="ot">=</span> <span class="fu">length</span>(y)</span>
+<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a>mapaFolds <span class="ot">&lt;-</span> <span class="cf">function</span>(y, y_hat, folds, <span class="at">y_hat2 =</span> <span class="cn">NULL</span>, <span class="at">level =</span> <span class="fl">0.95</span>){</span>
+<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a>  <span class="co"># Sanity Check</span></span>
+<span id="cb3-23"><a href="#cb3-23" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">length</span>(y_hat) <span class="sc">!=</span> <span class="fu">length</span>(y) <span class="sc">|</span> <span class="fu">length</span>(y_hat) <span class="sc">!=</span> <span class="fu">length</span>(folds) <span class="sc">|</span> <span class="fu">length</span>(y) <span class="sc">!=</span> <span class="fu">length</span>(folds)){</span>
+<span id="cb3-24"><a href="#cb3-24" tabindex="-1"></a>    <span class="fu">stop</span>(<span class="st">&quot;y, y_hat, and folds must be of the same length.&quot;</span>)</span>
+<span id="cb3-25"><a href="#cb3-25" tabindex="-1"></a>  }</span>
+<span id="cb3-26"><a href="#cb3-26" tabindex="-1"></a>  </span>
+<span id="cb3-27"><a href="#cb3-27" tabindex="-1"></a>  <span class="co"># Creating storage vector for results and variables</span></span>
+<span id="cb3-28"><a href="#cb3-28" tabindex="-1"></a>  os_folds <span class="ot">=</span> <span class="fu">c</span>()</span>
+<span id="cb3-29"><a href="#cb3-29" tabindex="-1"></a>  inf_folds <span class="ot">=</span> <span class="fu">c</span>()</span>
+<span id="cb3-30"><a href="#cb3-30" tabindex="-1"></a>  n <span class="ot">=</span> <span class="fu">length</span>(y)</span>
+<span id="cb3-31"><a href="#cb3-31" tabindex="-1"></a>  </span>
+<span id="cb3-32"><a href="#cb3-32" tabindex="-1"></a>  <span class="co"># Looping through folds</span></span>
+<span id="cb3-33"><a href="#cb3-33" tabindex="-1"></a>  <span class="cf">for</span>(fold <span class="cf">in</span> <span class="fu">sort</span>(<span class="fu">unique</span>(folds))){</span>
+<span id="cb3-34"><a href="#cb3-34" tabindex="-1"></a>    <span class="co"># Calculating and storing OS estimator</span></span>
+<span id="cb3-35"><a href="#cb3-35" tabindex="-1"></a>    os_res <span class="ot">=</span> <span class="fu">cor_os</span>(y_hat[<span class="fu">which</span>(folds <span class="sc">==</span> fold)], y[<span class="fu">which</span>(folds <span class="sc">==</span> fold)])</span>
+<span id="cb3-36"><a href="#cb3-36" tabindex="-1"></a>    os_folds <span class="ot">=</span> <span class="fu">c</span>(os_folds, os_res)</span>
+<span id="cb3-37"><a href="#cb3-37" tabindex="-1"></a>    </span>
+<span id="cb3-38"><a href="#cb3-38" tabindex="-1"></a>    <span class="co"># Calculating the influence vector and storing</span></span>
+<span id="cb3-39"><a href="#cb3-39" tabindex="-1"></a>    inf_res <span class="ot">=</span> <span class="fu">if_logit_sq</span>(y_hat[<span class="fu">which</span>(folds <span class="sc">==</span> fold)], y[<span class="fu">which</span>(folds <span class="sc">==</span> fold)])</span>
+<span id="cb3-40"><a href="#cb3-40" tabindex="-1"></a>    inf_folds <span class="ot">=</span> <span class="fu">c</span>(inf_folds, inf_res)</span>
+<span id="cb3-41"><a href="#cb3-41" tabindex="-1"></a>  }</span>
+<span id="cb3-42"><a href="#cb3-42" tabindex="-1"></a>  </span>
+<span id="cb3-43"><a href="#cb3-43" tabindex="-1"></a>  <span class="co"># Calculating overall OS estimate</span></span>
+<span id="cb3-44"><a href="#cb3-44" tabindex="-1"></a>  os_estimate <span class="ot">=</span> <span class="fu">mean</span>(os_folds, <span class="at">na.rm =</span> T)</span>
+<span id="cb3-45"><a href="#cb3-45" tabindex="-1"></a>  </span>
+<span id="cb3-46"><a href="#cb3-46" tabindex="-1"></a>  <span class="co"># Calculating the logit-scale estimates</span></span>
+<span id="cb3-47"><a href="#cb3-47" tabindex="-1"></a>  os_estimate_logit <span class="ot">=</span> <span class="fu">logit</span>(os_estimate<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb3-48"><a href="#cb3-48" tabindex="-1"></a>  </span>
+<span id="cb3-49"><a href="#cb3-49" tabindex="-1"></a>  <span class="co"># Calculating the standard error</span></span>
+<span id="cb3-50"><a href="#cb3-50" tabindex="-1"></a>  stand_error <span class="ot">=</span> <span class="fu">sqrt</span>(<span class="fu">var</span>(inf_folds)<span class="sc">/</span>n)</span>
+<span id="cb3-51"><a href="#cb3-51" tabindex="-1"></a>  </span>
+<span id="cb3-52"><a href="#cb3-52" tabindex="-1"></a>  <span class="co"># Calculating the bounds</span></span>
+<span id="cb3-53"><a href="#cb3-53" tabindex="-1"></a>  LB_est <span class="ot">=</span> <span class="fu">sqrt</span>(<span class="fu">expit</span>(os_estimate_logit <span class="sc">-</span> <span class="fu">qnorm</span>((<span class="dv">1</span> <span class="sc">+</span> level) <span class="sc">/</span> <span class="dv">2</span>)<span class="sc">*</span>stand_error))</span>
+<span id="cb3-54"><a href="#cb3-54" tabindex="-1"></a>  UB_est <span class="ot">=</span> <span class="fu">sqrt</span>(<span class="fu">expit</span>(os_estimate_logit <span class="sc">-</span> <span class="fu">qnorm</span>((<span class="dv">1</span> <span class="sc">-</span> level) <span class="sc">/</span> <span class="dv">2</span>)<span class="sc">*</span>stand_error))</span>
+<span id="cb3-55"><a href="#cb3-55" tabindex="-1"></a>  </span>
+<span id="cb3-56"><a href="#cb3-56" tabindex="-1"></a>  <span class="co"># Formatting fold estimates for output</span></span>
+<span id="cb3-57"><a href="#cb3-57" tabindex="-1"></a>  <span class="fu">names</span>(os_folds) <span class="ot">&lt;-</span> <span class="fu">sort</span>(<span class="fu">unique</span>(folds))</span>
+<span id="cb3-58"><a href="#cb3-58" tabindex="-1"></a>  </span>
+<span id="cb3-59"><a href="#cb3-59" tabindex="-1"></a>  <span class="co"># Creating data frame output </span></span>
+<span id="cb3-60"><a href="#cb3-60" tabindex="-1"></a>  estimate <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="at">est =</span> os_estimate, <span class="at">est_logit =</span> os_estimate_logit, <span class="at">LB =</span> LB_est, <span class="at">UB =</span> UB_est, <span class="at">se =</span> stand_error)</span>
+<span id="cb3-61"><a href="#cb3-61" tabindex="-1"></a>    </span>
+<span id="cb3-62"><a href="#cb3-62" tabindex="-1"></a>    </span>
+<span id="cb3-63"><a href="#cb3-63" tabindex="-1"></a>  <span class="cf">if</span>(<span class="sc">!</span><span class="fu">is.null</span>(y_hat2)){</span>
+<span id="cb3-64"><a href="#cb3-64" tabindex="-1"></a>    <span class="co"># Sanity Check</span></span>
+<span id="cb3-65"><a href="#cb3-65" tabindex="-1"></a>    <span class="cf">if</span>(<span class="fu">length</span>(y_hat2) <span class="sc">!=</span> <span class="fu">length</span>(y) <span class="sc">|</span> <span class="fu">length</span>(y_hat2) <span class="sc">!=</span> <span class="fu">length</span>(folds) <span class="sc">|</span> <span class="fu">length</span>(y) <span class="sc">!=</span> <span class="fu">length</span>(folds)){</span>
+<span id="cb3-66"><a href="#cb3-66" tabindex="-1"></a>      <span class="fu">stop</span>(<span class="st">&quot;y, y_hat2, and folds must be of the same length.&quot;</span>)</span>
+<span id="cb3-67"><a href="#cb3-67" tabindex="-1"></a>    }</span>
 <span id="cb3-68"><a href="#cb3-68" tabindex="-1"></a>    </span>
-<span id="cb3-69"><a href="#cb3-69" tabindex="-1"></a>    <span class="co"># Looping through folds</span></span>
-<span id="cb3-70"><a href="#cb3-70" tabindex="-1"></a>    <span class="cf">for</span>(fold <span class="cf">in</span> <span class="fu">unique</span>(folds)){</span>
-<span id="cb3-71"><a href="#cb3-71" tabindex="-1"></a>      <span class="co"># Calculating and storing OS estimator</span></span>
-<span id="cb3-72"><a href="#cb3-72" tabindex="-1"></a>      os_res <span class="ot">=</span> <span class="fu">cor_os</span>(y_hat2[<span class="fu">which</span>(folds <span class="sc">==</span> fold)], y[<span class="fu">which</span>(folds <span class="sc">==</span> fold)])</span>
-<span id="cb3-73"><a href="#cb3-73" tabindex="-1"></a>      os_folds2 <span class="ot">=</span> <span class="fu">c</span>(os_folds2, os_res)</span>
-<span id="cb3-74"><a href="#cb3-74" tabindex="-1"></a>      </span>
-<span id="cb3-75"><a href="#cb3-75" tabindex="-1"></a>      <span class="co"># Calculating the influence vector and storing</span></span>
-<span id="cb3-76"><a href="#cb3-76" tabindex="-1"></a>      inf_res <span class="ot">=</span> <span class="fu">if_logit_sq</span>(y_hat2[<span class="fu">which</span>(folds <span class="sc">==</span> fold)], y[<span class="fu">which</span>(folds <span class="sc">==</span> fold)])</span>
-<span id="cb3-77"><a href="#cb3-77" tabindex="-1"></a>      inf_folds2 <span class="ot">=</span> <span class="fu">c</span>(inf_folds2, inf_res)</span>
-<span id="cb3-78"><a href="#cb3-78" tabindex="-1"></a>    }</span>
-<span id="cb3-79"><a href="#cb3-79" tabindex="-1"></a>    </span>
-<span id="cb3-80"><a href="#cb3-80" tabindex="-1"></a>    <span class="co"># Calculating overall OS estimate</span></span>
-<span id="cb3-81"><a href="#cb3-81" tabindex="-1"></a>    os_estimate2 <span class="ot">=</span> <span class="fu">mean</span>(os_folds2, <span class="at">na.rm =</span> T)</span>
-<span id="cb3-82"><a href="#cb3-82" tabindex="-1"></a>    </span>
-<span id="cb3-83"><a href="#cb3-83" tabindex="-1"></a>    <span class="co"># Calculating the bounds</span></span>
-<span id="cb3-84"><a href="#cb3-84" tabindex="-1"></a>    LB_est2 <span class="ot">=</span> <span class="fu">sqrt</span>(<span class="fu">expit</span>(<span class="fu">logit</span>(os_estimate2<span class="sc">^</span><span class="dv">2</span>) <span class="sc">-</span> <span class="fu">qnorm</span>((<span class="dv">1</span> <span class="sc">+</span> level) <span class="sc">/</span> <span class="dv">2</span>)<span class="sc">*</span><span class="fu">sqrt</span>(<span class="fu">var</span>(inf_folds2)<span class="sc">/</span>n)))</span>
-<span id="cb3-85"><a href="#cb3-85" tabindex="-1"></a>    UB_est2 <span class="ot">=</span> <span class="fu">sqrt</span>(<span class="fu">expit</span>(<span class="fu">logit</span>(os_estimate2<span class="sc">^</span><span class="dv">2</span>) <span class="sc">-</span> <span class="fu">qnorm</span>((<span class="dv">1</span> <span class="sc">-</span> level) <span class="sc">/</span> <span class="dv">2</span>)<span class="sc">*</span><span class="fu">sqrt</span>(<span class="fu">var</span>(inf_folds2)<span class="sc">/</span>n)))</span>
-<span id="cb3-86"><a href="#cb3-86" tabindex="-1"></a>    </span>
-<span id="cb3-87"><a href="#cb3-87" tabindex="-1"></a>    <span class="co"># Formatting fold estimates for output</span></span>
-<span id="cb3-88"><a href="#cb3-88" tabindex="-1"></a>    <span class="fu">names</span>(os_folds2) <span class="ot">&lt;-</span> <span class="fu">unique</span>(folds)</span>
-<span id="cb3-89"><a href="#cb3-89" tabindex="-1"></a>    </span>
-<span id="cb3-90"><a href="#cb3-90" tabindex="-1"></a>    <span class="co"># Creating data frame output </span></span>
-<span id="cb3-91"><a href="#cb3-91" tabindex="-1"></a>    estimate2 <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="at">est =</span> os_estimate2, <span class="at">LB =</span> LB_est2, <span class="at">UB =</span> UB_est2)</span>
-<span id="cb3-92"><a href="#cb3-92" tabindex="-1"></a>    </span>
-<span id="cb3-93"><a href="#cb3-93" tabindex="-1"></a>    <span class="co"># Calculating OS difference - first yhat vs. second yhat</span></span>
-<span id="cb3-94"><a href="#cb3-94" tabindex="-1"></a>    diff <span class="ot">=</span> <span class="fu">cor_os_diff</span>(os_estimate, os_estimate2, inf_folds, inf_folds2)</span>
-<span id="cb3-95"><a href="#cb3-95" tabindex="-1"></a>    os_diff <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="at">est =</span> diff[<span class="dv">1</span>], <span class="at">LB =</span> diff[<span class="dv">2</span>], <span class="at">UB =</span> diff[<span class="dv">3</span>])</span>
-<span id="cb3-96"><a href="#cb3-96" tabindex="-1"></a>    </span>
-<span id="cb3-97"><a href="#cb3-97" tabindex="-1"></a>    <span class="co"># Calculating the OS ratio - first yhat vs. second yhat</span></span>
-<span id="cb3-98"><a href="#cb3-98" tabindex="-1"></a>    ratio <span class="ot">=</span> <span class="fu">cor_os_ratio</span>(os_estimate, os_estimate2, inf_folds, inf_folds2)</span>
-<span id="cb3-99"><a href="#cb3-99" tabindex="-1"></a>    os_ratio <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="at">est =</span> ratio[<span class="dv">1</span>], <span class="at">LB =</span> ratio[<span class="dv">2</span>], <span class="at">UB =</span> ratio[<span class="dv">3</span>])</span>
+<span id="cb3-69"><a href="#cb3-69" tabindex="-1"></a>    <span class="co"># Creating storage vector for results and variables</span></span>
+<span id="cb3-70"><a href="#cb3-70" tabindex="-1"></a>    os_folds2 <span class="ot">=</span> <span class="fu">c</span>()</span>
+<span id="cb3-71"><a href="#cb3-71" tabindex="-1"></a>    inf_folds2 <span class="ot">=</span> <span class="fu">c</span>()</span>
+<span id="cb3-72"><a href="#cb3-72" tabindex="-1"></a>    n <span class="ot">=</span> <span class="fu">length</span>(y)</span>
+<span id="cb3-73"><a href="#cb3-73" tabindex="-1"></a>    </span>
+<span id="cb3-74"><a href="#cb3-74" tabindex="-1"></a>    <span class="co"># Looping through folds</span></span>
+<span id="cb3-75"><a href="#cb3-75" tabindex="-1"></a>    <span class="cf">for</span>(fold <span class="cf">in</span> <span class="fu">sort</span>(<span class="fu">unique</span>(folds))){</span>
+<span id="cb3-76"><a href="#cb3-76" tabindex="-1"></a>      <span class="co"># Calculating and storing OS estimator</span></span>
+<span id="cb3-77"><a href="#cb3-77" tabindex="-1"></a>      os_res <span class="ot">=</span> <span class="fu">cor_os</span>(y_hat2[<span class="fu">which</span>(folds <span class="sc">==</span> fold)], y[<span class="fu">which</span>(folds <span class="sc">==</span> fold)])</span>
+<span id="cb3-78"><a href="#cb3-78" tabindex="-1"></a>      os_folds2 <span class="ot">=</span> <span class="fu">c</span>(os_folds2, os_res)</span>
+<span id="cb3-79"><a href="#cb3-79" tabindex="-1"></a>      </span>
+<span id="cb3-80"><a href="#cb3-80" tabindex="-1"></a>      <span class="co"># Calculating the influence vector and storing</span></span>
+<span id="cb3-81"><a href="#cb3-81" tabindex="-1"></a>      inf_res <span class="ot">=</span> <span class="fu">if_logit_sq</span>(y_hat2[<span class="fu">which</span>(folds <span class="sc">==</span> fold)], y[<span class="fu">which</span>(folds <span class="sc">==</span> fold)])</span>
+<span id="cb3-82"><a href="#cb3-82" tabindex="-1"></a>      inf_folds2 <span class="ot">=</span> <span class="fu">c</span>(inf_folds2, inf_res)</span>
+<span id="cb3-83"><a href="#cb3-83" tabindex="-1"></a>    }</span>
+<span id="cb3-84"><a href="#cb3-84" tabindex="-1"></a>    </span>
+<span id="cb3-85"><a href="#cb3-85" tabindex="-1"></a>    <span class="co"># Calculating overall OS estimate</span></span>
+<span id="cb3-86"><a href="#cb3-86" tabindex="-1"></a>    os_estimate2 <span class="ot">=</span> <span class="fu">mean</span>(os_folds2, <span class="at">na.rm =</span> T)</span>
+<span id="cb3-87"><a href="#cb3-87" tabindex="-1"></a>    </span>
+<span id="cb3-88"><a href="#cb3-88" tabindex="-1"></a>    <span class="co"># Calculating the logit-scale estimate</span></span>
+<span id="cb3-89"><a href="#cb3-89" tabindex="-1"></a>    os_estimate2_logit <span class="ot">=</span> <span class="fu">logit</span>(os_estimate2<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb3-90"><a href="#cb3-90" tabindex="-1"></a>    </span>
+<span id="cb3-91"><a href="#cb3-91" tabindex="-1"></a>    <span class="co"># Calculating standard error</span></span>
+<span id="cb3-92"><a href="#cb3-92" tabindex="-1"></a>    stand_error2 <span class="ot">=</span> <span class="fu">sqrt</span>(<span class="fu">var</span>(inf_folds2)<span class="sc">/</span>n)</span>
+<span id="cb3-93"><a href="#cb3-93" tabindex="-1"></a>    </span>
+<span id="cb3-94"><a href="#cb3-94" tabindex="-1"></a>    <span class="co"># Calculating the bounds</span></span>
+<span id="cb3-95"><a href="#cb3-95" tabindex="-1"></a>    LB_est2 <span class="ot">=</span> <span class="fu">sqrt</span>(<span class="fu">expit</span>(os_estimate2_logit <span class="sc">-</span> <span class="fu">qnorm</span>((<span class="dv">1</span> <span class="sc">+</span> level) <span class="sc">/</span> <span class="dv">2</span>)<span class="sc">*</span> stand_error2))</span>
+<span id="cb3-96"><a href="#cb3-96" tabindex="-1"></a>    UB_est2 <span class="ot">=</span> <span class="fu">sqrt</span>(<span class="fu">expit</span>(os_estimate2_logit <span class="sc">-</span> <span class="fu">qnorm</span>((<span class="dv">1</span> <span class="sc">-</span> level) <span class="sc">/</span> <span class="dv">2</span>)<span class="sc">*</span>stand_error2))</span>
+<span id="cb3-97"><a href="#cb3-97" tabindex="-1"></a>    </span>
+<span id="cb3-98"><a href="#cb3-98" tabindex="-1"></a>    <span class="co"># Formatting fold estimates for output</span></span>
+<span id="cb3-99"><a href="#cb3-99" tabindex="-1"></a>    <span class="fu">names</span>(os_folds2) <span class="ot">&lt;-</span> <span class="fu">sort</span>(<span class="fu">unique</span>(folds))</span>
 <span id="cb3-100"><a href="#cb3-100" tabindex="-1"></a>    </span>
-<span id="cb3-101"><a href="#cb3-101" tabindex="-1"></a>    <span class="co"># Combining all data into one</span></span>
-<span id="cb3-102"><a href="#cb3-102" tabindex="-1"></a>    est_total <span class="ot">=</span> <span class="fu">rbind</span>(estimate, estimate2, os_diff, os_ratio)</span>
+<span id="cb3-101"><a href="#cb3-101" tabindex="-1"></a>    <span class="co"># Creating data frame output </span></span>
+<span id="cb3-102"><a href="#cb3-102" tabindex="-1"></a>    estimate2 <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="at">est =</span> os_estimate2, <span class="at">est_logit =</span> os_estimate2_logit, <span class="at">LB =</span> LB_est2, <span class="at">UB =</span> UB_est2, <span class="at">se =</span> stand_error2)</span>
 <span id="cb3-103"><a href="#cb3-103" tabindex="-1"></a>    </span>
-<span id="cb3-104"><a href="#cb3-104" tabindex="-1"></a>    <span class="co"># Assigning row names</span></span>
-<span id="cb3-105"><a href="#cb3-105" tabindex="-1"></a>    est_total<span class="sc">$</span>metric <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;yhat1&quot;</span>, <span class="st">&quot;yhat2&quot;</span>, <span class="st">&quot;Diff&quot;</span>, <span class="st">&quot;Ratio&quot;</span>)</span>
-<span id="cb3-106"><a href="#cb3-106" tabindex="-1"></a>    <span class="fu">rownames</span>(est_total) <span class="ot">&lt;-</span> <span class="cn">NULL</span> </span>
+<span id="cb3-104"><a href="#cb3-104" tabindex="-1"></a>    <span class="co"># Calculating OS difference - first yhat vs. second yhat</span></span>
+<span id="cb3-105"><a href="#cb3-105" tabindex="-1"></a>    diff <span class="ot">=</span> <span class="fu">cor_os_diff</span>(os_estimate, os_estimate2, inf_folds, inf_folds2)</span>
+<span id="cb3-106"><a href="#cb3-106" tabindex="-1"></a>    os_diff <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="at">est =</span> diff[<span class="dv">1</span>], <span class="at">est_logit =</span> <span class="cn">NA</span>, <span class="at">LB =</span> diff[<span class="dv">2</span>], <span class="at">UB =</span> diff[<span class="dv">3</span>], <span class="at">se =</span> diff[<span class="dv">4</span>])</span>
 <span id="cb3-107"><a href="#cb3-107" tabindex="-1"></a>    </span>
-<span id="cb3-108"><a href="#cb3-108" tabindex="-1"></a>    </span>
-<span id="cb3-109"><a href="#cb3-109" tabindex="-1"></a>    <span class="co"># Combining all outputs into one list</span></span>
-<span id="cb3-110"><a href="#cb3-110" tabindex="-1"></a>    out <span class="ot">=</span> <span class="fu">list</span>(<span class="at">est =</span> est_total, <span class="at">fold.est =</span> os_folds, <span class="at">fold.est2 =</span> os_folds2, <span class="at">n =</span> n, <span class="at">conf.level =</span> level) <span class="co"># data frame version</span></span>
-<span id="cb3-111"><a href="#cb3-111" tabindex="-1"></a>  }</span>
-<span id="cb3-112"><a href="#cb3-112" tabindex="-1"></a>  <span class="cf">else</span>{</span>
-<span id="cb3-113"><a href="#cb3-113" tabindex="-1"></a>    <span class="co"># Combining all outputs into one list when there is no yhat2</span></span>
-<span id="cb3-114"><a href="#cb3-114" tabindex="-1"></a>    out <span class="ot">=</span> <span class="fu">list</span>(<span class="at">est =</span> estimate, <span class="at">fold.est =</span> os_folds, <span class="at">n =</span> n, <span class="at">conf.level =</span> level) <span class="co"># data frame version</span></span>
-<span id="cb3-115"><a href="#cb3-115" tabindex="-1"></a>  }</span>
-<span id="cb3-116"><a href="#cb3-116" tabindex="-1"></a>  </span>
-<span id="cb3-117"><a href="#cb3-117" tabindex="-1"></a>  <span class="co"># Returning the data frame</span></span>
-<span id="cb3-118"><a href="#cb3-118" tabindex="-1"></a>  <span class="fu">return</span>(out)</span>
-<span id="cb3-119"><a href="#cb3-119" tabindex="-1"></a>}</span></code></pre></div>
-</div>
-<div id="test-case" class="section level2" number="2.2">
-<h2><span class="header-section-number">2.2</span> Test Case</h2>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co"># Creating a test data frame</span></span>
-<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">y_hat =</span> <span class="fu">runif</span>(<span class="dv">9</span>),</span>
-<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>                 <span class="at">y_hat2 =</span> <span class="fu">runif</span>(<span class="dv">9</span>),</span>
-<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>                 <span class="at">y_real =</span> <span class="fu">runif</span>(<span class="dv">9</span>),</span>
-<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>                 <span class="at">folds =</span> <span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="dv">3</span>))</span>
-<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a></span>
-<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a></span>
-<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="co"># Testing the algorithm with one y_hat input</span></span>
-<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>test1 <span class="ot">=</span> <span class="fu">foldOS</span>(df<span class="sc">$</span>y_real, df<span class="sc">$</span>y_hat, df<span class="sc">$</span>folds)</span>
-<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a>test1</span></code></pre></div>
-<pre><code>## $est
-##         est          LB        UB
-## 1 0.6988239 0.000861279 0.9999996
-## 
-## $fold.est
-##         1         2         3 
-## 0.9025496 0.1939220 1.0000000 
-## 
-## $n
-## [1] 9
-## 
-## $conf.level
-## [1] 0.95</code></pre>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="co"># Testing the algorithm with two y_hat input</span></span>
-<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>test2 <span class="ot">=</span> <span class="fu">foldOS</span>(df<span class="sc">$</span>y_real, df<span class="sc">$</span>y_hat, df<span class="sc">$</span>folds, df<span class="sc">$</span>y_hat2)</span>
-<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>test2</span></code></pre></div>
-<pre><code>## $est
-##          est            LB           UB metric
-## 1 0.69882390  8.612790e-04 9.999996e-01  yhat1
-## 2 0.60182698  1.072110e-07 1.000000e+00  yhat2
-## 3 0.09699692 -8.347910e+00 8.541904e+00   Diff
-## 4 1.68077953  5.145898e-20 5.489848e+19  Ratio
-## 
-## $fold.est
-##         1         2         3 
-## 0.9025496 0.1939220 1.0000000 
-## 
-## $fold.est2
-##            1            2            3 
-## 9.867627e-01 8.187183e-01 4.371948e-17 
-## 
-## $n
-## [1] 9
-## 
-## $conf.level
-## [1] 0.95</code></pre>
+<span id="cb3-108"><a href="#cb3-108" tabindex="-1"></a>    <span class="co"># Calculating the OS ratio - first yhat vs. second yhat</span></span>
+<span id="cb3-109"><a href="#cb3-109" tabindex="-1"></a>    ratio <span class="ot">=</span> <span class="fu">cor_os_ratio</span>(os_estimate, os_estimate2, inf_folds, inf_folds2)</span>
+<span id="cb3-110"><a href="#cb3-110" tabindex="-1"></a>    os_ratio <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="at">est =</span> ratio[<span class="dv">1</span>], <span class="at">est_logit =</span> <span class="cn">NA</span>, <span class="at">LB =</span> ratio[<span class="dv">2</span>], <span class="at">UB =</span> ratio[<span class="dv">3</span>], <span class="at">se =</span> ratio[<span class="dv">4</span>])</span>
+<span id="cb3-111"><a href="#cb3-111" tabindex="-1"></a>    </span>
+<span id="cb3-112"><a href="#cb3-112" tabindex="-1"></a>    <span class="co"># Combining all data into one</span></span>
+<span id="cb3-113"><a href="#cb3-113" tabindex="-1"></a>    est_total <span class="ot">=</span> <span class="fu">rbind</span>(estimate, estimate2, os_diff, os_ratio)</span>
+<span id="cb3-114"><a href="#cb3-114" tabindex="-1"></a>    </span>
+<span id="cb3-115"><a href="#cb3-115" tabindex="-1"></a>    <span class="co"># Assigning row names</span></span>
+<span id="cb3-116"><a href="#cb3-116" tabindex="-1"></a>    est_total<span class="sc">$</span>metric <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;yhat1&quot;</span>, <span class="st">&quot;yhat2&quot;</span>, <span class="st">&quot;Diff&quot;</span>, <span class="st">&quot;Ratio&quot;</span>)</span>
+<span id="cb3-117"><a href="#cb3-117" tabindex="-1"></a>    <span class="fu">rownames</span>(est_total) <span class="ot">&lt;-</span> <span class="cn">NULL</span> </span>
+<span id="cb3-118"><a href="#cb3-118" tabindex="-1"></a>    </span>
+<span id="cb3-119"><a href="#cb3-119" tabindex="-1"></a>    </span>
+<span id="cb3-120"><a href="#cb3-120" tabindex="-1"></a>    <span class="co"># Combining all outputs into one list</span></span>
+<span id="cb3-121"><a href="#cb3-121" tabindex="-1"></a>    out <span class="ot">=</span> <span class="fu">list</span>(<span class="at">est =</span> est_total, <span class="at">fold.est =</span> os_folds, <span class="at">fold.est2 =</span> os_folds2, <span class="at">n =</span> n, <span class="at">conf.level =</span> level) <span class="co"># data frame version</span></span>
+<span id="cb3-122"><a href="#cb3-122" tabindex="-1"></a>  }</span>
+<span id="cb3-123"><a href="#cb3-123" tabindex="-1"></a>  <span class="cf">else</span>{</span>
+<span id="cb3-124"><a href="#cb3-124" tabindex="-1"></a>    <span class="co"># Combining all outputs into one list when there is no yhat2</span></span>
+<span id="cb3-125"><a href="#cb3-125" tabindex="-1"></a>    out <span class="ot">=</span> <span class="fu">list</span>(<span class="at">est =</span> estimate, <span class="at">fold.est =</span> os_folds, <span class="at">n =</span> n, <span class="at">conf.level =</span> level) <span class="co"># data frame version</span></span>
+<span id="cb3-126"><a href="#cb3-126" tabindex="-1"></a>    </span>
+<span id="cb3-127"><a href="#cb3-127" tabindex="-1"></a>    <span class="co"># Naming the metric being measured in estimate</span></span>
+<span id="cb3-128"><a href="#cb3-128" tabindex="-1"></a>    out<span class="sc">$</span>est<span class="sc">$</span>metric <span class="ot">=</span> <span class="st">&quot;yhat1&quot;</span></span>
+<span id="cb3-129"><a href="#cb3-129" tabindex="-1"></a>  }</span>
+<span id="cb3-130"><a href="#cb3-130" tabindex="-1"></a>  </span>
+<span id="cb3-131"><a href="#cb3-131" tabindex="-1"></a>  <span class="co"># Returning the data frame</span></span>
+<span id="cb3-132"><a href="#cb3-132" tabindex="-1"></a>  <span class="fu">return</span>(out)</span>
+<span id="cb3-133"><a href="#cb3-133" tabindex="-1"></a>}</span></code></pre></div>
 </div>
 </div>
 <div id="writing-a-function-for-sample-splits" class="section level1" number="3">
@@ -1891,313 +1876,93 @@ sample splits</h1>
 <div id="generating-output-by-sample-split" class="section level2" number="3.1">
 <h2><span class="header-section-number">3.1</span> Generating output by
 sample split</h2>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="co"># Taking matrix where # of cols is # of sample splits and # of rows is # of observations</span></span>
-<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>sampleSplitOS <span class="ot">&lt;-</span> <span class="cf">function</span>(y, y_hat, folds, <span class="at">y_hat2 =</span> <span class="cn">NULL</span>, <span class="at">level =</span> <span class="fl">0.95</span>){</span>
-<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  <span class="co"># Turning y into a matrix</span></span>
-<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>  y <span class="ot">=</span> <span class="fu">as.matrix</span>(y)</span>
-<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>  </span>
-<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>  <span class="co"># Turning data frames into matrices</span></span>
-<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">is.data.frame</span>(y_hat)){</span>
-<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a>    y_hat <span class="ot">=</span> <span class="fu">as.matrix</span>(y_hat)</span>
-<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a>  }</span>
-<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a>  </span>
-<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">is.data.frame</span>(folds)){</span>
-<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a>    folds <span class="ot">=</span> <span class="fu">as.matrix</span>(folds)</span>
-<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a>  }</span>
-<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a>  </span>
-<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">is.data.frame</span>(y_hat2)){</span>
-<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a>    y_hat2 <span class="ot">=</span> <span class="fu">as.matrix</span>(y_hat2)</span>
-<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a>  }</span>
-<span id="cb8-18"><a href="#cb8-18" tabindex="-1"></a>  </span>
-<span id="cb8-19"><a href="#cb8-19" tabindex="-1"></a>  <span class="co"># Sanity checks</span></span>
-<span id="cb8-20"><a href="#cb8-20" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">nrow</span>(y) <span class="sc">!=</span> <span class="fu">nrow</span>(y_hat) <span class="sc">|</span> <span class="fu">nrow</span>(y) <span class="sc">!=</span> <span class="fu">nrow</span>(folds) <span class="sc">|</span> <span class="fu">nrow</span>(folds) <span class="sc">!=</span> <span class="fu">nrow</span>(y_hat)){</span>
-<span id="cb8-21"><a href="#cb8-21" tabindex="-1"></a>    <span class="fu">stop</span>(<span class="st">&quot;y and y_hat must have the same amount of rows&quot;</span>)</span>
-<span id="cb8-22"><a href="#cb8-22" tabindex="-1"></a>  }</span>
-<span id="cb8-23"><a href="#cb8-23" tabindex="-1"></a>  </span>
-<span id="cb8-24"><a href="#cb8-24" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">ncol</span>(folds) <span class="sc">!=</span> <span class="fu">ncol</span>(y_hat)){</span>
-<span id="cb8-25"><a href="#cb8-25" tabindex="-1"></a>    <span class="fu">stop</span>(<span class="st">&quot;folds and y_hat must have the same column number&quot;</span>)</span>
-<span id="cb8-26"><a href="#cb8-26" tabindex="-1"></a>  }</span>
-<span id="cb8-27"><a href="#cb8-27" tabindex="-1"></a>  </span>
-<span id="cb8-28"><a href="#cb8-28" tabindex="-1"></a>  <span class="co"># Sanity checks for second mu</span></span>
-<span id="cb8-29"><a href="#cb8-29" tabindex="-1"></a>  <span class="cf">if</span>(<span class="sc">!</span><span class="fu">is.null</span>(y_hat2)){</span>
-<span id="cb8-30"><a href="#cb8-30" tabindex="-1"></a>      <span class="cf">if</span>(<span class="fu">ncol</span>(folds) <span class="sc">!=</span> <span class="fu">ncol</span>(y_hat2)){</span>
-<span id="cb8-31"><a href="#cb8-31" tabindex="-1"></a>      <span class="fu">stop</span>(<span class="st">&quot;folds and y_hat2 must have the same column number&quot;</span>)</span>
-<span id="cb8-32"><a href="#cb8-32" tabindex="-1"></a>    }</span>
-<span id="cb8-33"><a href="#cb8-33" tabindex="-1"></a>    </span>
-<span id="cb8-34"><a href="#cb8-34" tabindex="-1"></a>    <span class="cf">if</span>(<span class="fu">nrow</span>(y) <span class="sc">!=</span> <span class="fu">nrow</span>(y_hat2) <span class="sc">|</span> <span class="fu">nrow</span>(folds) <span class="sc">!=</span> <span class="fu">nrow</span>(y_hat2)){</span>
-<span id="cb8-35"><a href="#cb8-35" tabindex="-1"></a>      <span class="fu">stop</span>(<span class="st">&quot;y and y_hat2 must have the same amount of rows&quot;</span>)</span>
-<span id="cb8-36"><a href="#cb8-36" tabindex="-1"></a>    }</span>
-<span id="cb8-37"><a href="#cb8-37" tabindex="-1"></a>  }</span>
-<span id="cb8-38"><a href="#cb8-38" tabindex="-1"></a>  </span>
-<span id="cb8-39"><a href="#cb8-39" tabindex="-1"></a>  </span>
-<span id="cb8-40"><a href="#cb8-40" tabindex="-1"></a>  <span class="co"># number of sample splits</span></span>
-<span id="cb8-41"><a href="#cb8-41" tabindex="-1"></a>  n_splits <span class="ot">&lt;-</span> <span class="fu">ncol</span>(y_hat)</span>
-<span id="cb8-42"><a href="#cb8-42" tabindex="-1"></a>  </span>
-<span id="cb8-43"><a href="#cb8-43" tabindex="-1"></a>  <span class="co"># SINGLE lapply over splits</span></span>
-<span id="cb8-44"><a href="#cb8-44" tabindex="-1"></a>  res_list <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="fu">seq_len</span>(n_splits), <span class="cf">function</span>(i) {</span>
-<span id="cb8-45"><a href="#cb8-45" tabindex="-1"></a>    <span class="co"># choose appropriate y_hat2 column (or NULL)</span></span>
-<span id="cb8-46"><a href="#cb8-46" tabindex="-1"></a>    this_yhat2 <span class="ot">&lt;-</span> <span class="cf">if</span> (<span class="fu">is.null</span>(y_hat2)) <span class="cn">NULL</span> <span class="cf">else</span> y_hat2[, i]</span>
-<span id="cb8-47"><a href="#cb8-47" tabindex="-1"></a>    </span>
-<span id="cb8-48"><a href="#cb8-48" tabindex="-1"></a>    <span class="co"># run foldOS once</span></span>
-<span id="cb8-49"><a href="#cb8-49" tabindex="-1"></a>    tmp <span class="ot">&lt;-</span> <span class="fu">foldOS</span>(y, y_hat[, i], folds[, i], this_yhat2, level)</span>
-<span id="cb8-50"><a href="#cb8-50" tabindex="-1"></a>    </span>
-<span id="cb8-51"><a href="#cb8-51" tabindex="-1"></a>    <span class="co"># add split id to est</span></span>
-<span id="cb8-52"><a href="#cb8-52" tabindex="-1"></a>    tmp<span class="sc">$</span>est<span class="sc">$</span>split <span class="ot">&lt;-</span> i</span>
-<span id="cb8-53"><a href="#cb8-53" tabindex="-1"></a>    </span>
-<span id="cb8-54"><a href="#cb8-54" tabindex="-1"></a>    <span class="co"># return everything we might need</span></span>
-<span id="cb8-55"><a href="#cb8-55" tabindex="-1"></a>    <span class="fu">list</span>(<span class="at">est   =</span> tmp<span class="sc">$</span>est, <span class="at">fold1 =</span> tmp<span class="sc">$</span>fold.est, <span class="at">fold2 =</span> <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(y_hat2)) tmp<span class="sc">$</span>fold.est2 <span class="cf">else</span> <span class="cn">NULL</span>)</span>
-<span id="cb8-56"><a href="#cb8-56" tabindex="-1"></a>  })</span>
-<span id="cb8-57"><a href="#cb8-57" tabindex="-1"></a>  </span>
-<span id="cb8-58"><a href="#cb8-58" tabindex="-1"></a>  <span class="co"># helper to extract and rbind a component if it exists</span></span>
-<span id="cb8-59"><a href="#cb8-59" tabindex="-1"></a>  bind_component <span class="ot">&lt;-</span> <span class="cf">function</span>(lst, name) {</span>
-<span id="cb8-60"><a href="#cb8-60" tabindex="-1"></a>    comp <span class="ot">&lt;-</span> <span class="fu">lapply</span>(lst, <span class="st">`</span><span class="at">[[</span><span class="st">`</span>, name)</span>
-<span id="cb8-61"><a href="#cb8-61" tabindex="-1"></a>    <span class="co"># filter out NULLs (e.g., fold2 when y_hat2 is NULL)</span></span>
-<span id="cb8-62"><a href="#cb8-62" tabindex="-1"></a>    comp <span class="ot">&lt;-</span> comp[<span class="sc">!</span><span class="fu">vapply</span>(comp, is.null, <span class="fu">logical</span>(<span class="dv">1</span>))]</span>
-<span id="cb8-63"><a href="#cb8-63" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">length</span>(comp) <span class="sc">==</span> <span class="dv">0</span><span class="dt">L</span>) <span class="fu">return</span>(<span class="cn">NULL</span>)</span>
-<span id="cb8-64"><a href="#cb8-64" tabindex="-1"></a>    <span class="fu">do.call</span>(rbind, comp)</span>
-<span id="cb8-65"><a href="#cb8-65" tabindex="-1"></a>  }</span>
-<span id="cb8-66"><a href="#cb8-66" tabindex="-1"></a>  </span>
-<span id="cb8-67"><a href="#cb8-67" tabindex="-1"></a>  <span class="co"># Row-binding the respective list components and assigning them to variables</span></span>
-<span id="cb8-68"><a href="#cb8-68" tabindex="-1"></a>  est <span class="ot">&lt;-</span> <span class="fu">bind_component</span>(res_list, <span class="st">&quot;est&quot;</span>)</span>
-<span id="cb8-69"><a href="#cb8-69" tabindex="-1"></a>  folds_one <span class="ot">&lt;-</span> <span class="fu">bind_component</span>(res_list, <span class="st">&quot;fold1&quot;</span>)</span>
-<span id="cb8-70"><a href="#cb8-70" tabindex="-1"></a>  folds_two <span class="ot">&lt;-</span> <span class="fu">bind_component</span>(res_list, <span class="st">&quot;fold2&quot;</span>)</span>
-<span id="cb8-71"><a href="#cb8-71" tabindex="-1"></a>  </span>
-<span id="cb8-72"><a href="#cb8-72" tabindex="-1"></a>  <span class="co"># build output</span></span>
-<span id="cb8-73"><a href="#cb8-73" tabindex="-1"></a>  out <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">result =</span> est, <span class="at">fold1.vals  =</span> folds_one,<span class="at">n =</span> <span class="fu">length</span>(y), <span class="at">conf.level  =</span> level)</span>
-<span id="cb8-74"><a href="#cb8-74" tabindex="-1"></a>  </span>
-<span id="cb8-75"><a href="#cb8-75" tabindex="-1"></a>  <span class="co"># Changing output based on if yhat2 is passed</span></span>
-<span id="cb8-76"><a href="#cb8-76" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(folds_two)) {</span>
-<span id="cb8-77"><a href="#cb8-77" tabindex="-1"></a>    out<span class="sc">$</span>fold2.vals <span class="ot">&lt;-</span> folds_two</span>
-<span id="cb8-78"><a href="#cb8-78" tabindex="-1"></a>  }</span>
-<span id="cb8-79"><a href="#cb8-79" tabindex="-1"></a>  </span>
-<span id="cb8-80"><a href="#cb8-80" tabindex="-1"></a>  <span class="fu">return</span>(out)</span>
-<span id="cb8-81"><a href="#cb8-81" tabindex="-1"></a>}</span></code></pre></div>
-</div>
-<div id="test-case-for-sample-split" class="section level2" number="3.2">
-<h2><span class="header-section-number">3.2</span> Test Case for Sample
-Split</h2>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="co"># Creating test variables</span></span>
-<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>test_fold <span class="ot">=</span> <span class="fu">matrix</span>(<span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="dv">9</span>), <span class="at">ncol =</span> <span class="dv">3</span>)</span>
-<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>y <span class="ot">=</span> <span class="fu">runif</span>(<span class="dv">9</span>)</span>
-<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>mu <span class="ot">=</span> <span class="fu">matrix</span>(<span class="fu">runif</span>(<span class="dv">27</span>), <span class="at">ncol =</span> <span class="dv">3</span>)</span>
-<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>mu2 <span class="ot">=</span> <span class="fu">matrix</span>(<span class="fu">runif</span>(<span class="dv">27</span>), <span class="at">ncol =</span> <span class="dv">3</span>)</span>
-<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a></span>
-<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a></span>
-<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a><span class="co"># Testing the method with one mu</span></span>
-<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a>split_res <span class="ot">=</span> <span class="fu">sampleSplitOS</span>(y, mu, test_fold)</span>
-<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a>split_res</span></code></pre></div>
-<pre><code>## $result
-##         est           LB        UB split
-## 1 0.3685049 1.373443e-02 0.9962011     1
-## 2 0.0279659 3.711764e-05 0.9988775     2
-## 3 0.9654588 8.333374e-01 0.9940256     3
-## 
-## $fold1.vals
-##                 1          2          3
-## [1,] 9.997203e-01 0.02950174 0.07629272
-## [2,] 8.921492e-09 0.07271723 0.01118046
-## [3,] 9.999779e-01 0.99070689 0.90569171
-## 
-## $n
-## [1] 9
-## 
-## $conf.level
-## [1] 0.95</code></pre>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="co"># Testing the method with two mu</span></span>
-<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>split_res2 <span class="ot">=</span> <span class="fu">sampleSplitOS</span>(y, mu, test_fold, mu2)</span>
-<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>split_res2 <span class="co"># Note here that fold estimate matrix is each column is a different fold and each row is a different sample split</span></span></code></pre></div>
-<pre><code>## $result
-##              est            LB           UB metric split
-## 1    0.368504922  1.373443e-02 9.962011e-01  yhat1     1
-## 2    0.659965655  8.570168e-23 1.000000e+00  yhat2     1
-## 3   -0.291460733 -1.979618e+01 1.921326e+01   Diff     1
-## 4    0.203633614  3.745980e-47 1.106964e+45  Ratio     1
-## 5    0.027965899  3.711764e-05 9.988775e-01  yhat1     2
-## 6    0.632714272  1.916750e-01 9.597731e-01  yhat2     2
-## 7   -0.604748373 -1.317065e+00 1.075682e-01   Diff     2
-## 8    0.001172455  1.543524e-10 8.905930e+03  Ratio     2
-## 9    0.965458841  8.333374e-01 9.940256e-01  yhat1     3
-## 10   0.337360109  7.141532e-02 8.734375e-01  yhat2     3
-## 11   0.628098732  1.399945e-01 1.116203e+00   Diff     3
-## 12 106.906756343  2.464937e+00 4.636652e+03  Ratio     3
-## 
-## $fold1.vals
-##                 1          2          3
-## [1,] 9.997203e-01 0.02950174 0.07629272
-## [2,] 8.921492e-09 0.07271723 0.01118046
-## [3,] 9.999779e-01 0.99070689 0.90569171
-## 
-## $n
-## [1] 9
-## 
-## $conf.level
-## [1] 0.95
-## 
-## $fold2.vals
-##              1            2         3
-## [1,] 0.9889769 1.266831e-26 0.9909201
-## [2,] 0.9998189 7.816082e-01 0.1167157
-## [3,] 0.7490939 7.584787e-02 0.1871385</code></pre>
-</div>
-</div>
-<div id="creating-examples-with-online-r-studio-datasets" class="section level1" number="4">
-<h1><span class="header-section-number">4</span> Creating Examples with
-Online R Studio Datasets</h1>
-<div id="using-neuro-datasets-package" class="section level2" number="4.1">
-<h2><span class="header-section-number">4.1</span> Using Neuro Datasets
-Package</h2>
-<div id="installing-data" class="section level3" number="4.1.1">
-<h3><span class="header-section-number">4.1.1</span> Installing
-data</h3>
-<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="co"># Setting the seed</span></span>
-<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a></span>
-<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a><span class="co"># Installing the dataset</span></span>
-<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a><span class="co"># devtools::install_github(&quot;lightbluetitan/neurodatasets&quot;)</span></span>
-<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a></span>
-<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a><span class="co"># Loading in dataset</span></span>
-<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a><span class="fu">library</span>(NeuroDataSets)</span>
-<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a></span>
-<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a><span class="co"># Loading in dataset of interest</span></span>
-<span id="cb13-11"><a href="#cb13-11" tabindex="-1"></a><span class="fu">data</span>(<span class="st">&quot;OASIS_cross_tbl_df&quot;</span>)</span></code></pre></div>
-</div>
-<div id="creating-a-ridge-regression-model" class="section level3" number="4.1.2">
-<h3><span class="header-section-number">4.1.2</span> Creating a Ridge
-Regression Model</h3>
-<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="co"># Cleaning data</span></span>
-<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a><span class="do">## Data Processing - drop NA before CV</span></span>
-<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a>data_clean <span class="ot">=</span> OASIS_cross_tbl_df <span class="sc">%&gt;%</span> <span class="fu">drop_na</span>(Age) </span>
-<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a></span>
-<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="do">## Assigning folds</span></span>
-<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a>folds <span class="ot">=</span> <span class="dv">5</span></span>
-<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a>data_clean<span class="sc">$</span>fold <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span>folds, <span class="at">length.out =</span> <span class="fu">nrow</span>(data_clean)))</span>
-<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a></span>
-<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a><span class="do">## Checking for fold distribution </span></span>
-<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a><span class="fu">table</span>(data_clean<span class="sc">$</span>fold)</span></code></pre></div>
-<pre><code>## 
-##  1  2  3  4  5 
-## 88 87 87 87 87</code></pre>
-<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="co"># Storage variables</span></span>
-<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a>lambda <span class="ot">=</span> <span class="fu">c</span>()</span>
-<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a>preds_eTIV <span class="ot">=</span> <span class="fu">c</span>()</span>
-<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a>preds_nWBV <span class="ot">=</span> <span class="fu">c</span>()</span>
-<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a>fold <span class="ot">&lt;-</span> <span class="fu">c</span>()</span>
-<span id="cb16-6"><a href="#cb16-6" tabindex="-1"></a>test_y_eTIV <span class="ot">=</span> <span class="fu">c</span>()</span>
-<span id="cb16-7"><a href="#cb16-7" tabindex="-1"></a>test_y_nWBV <span class="ot">=</span> <span class="fu">c</span>()</span>
-<span id="cb16-8"><a href="#cb16-8" tabindex="-1"></a></span>
-<span id="cb16-9"><a href="#cb16-9" tabindex="-1"></a></span>
-<span id="cb16-10"><a href="#cb16-10" tabindex="-1"></a><span class="co"># Creating a for loop for 5-fold cross validation</span></span>
-<span id="cb16-11"><a href="#cb16-11" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>folds){</span>
-<span id="cb16-12"><a href="#cb16-12" tabindex="-1"></a>  <span class="co"># Assigning data</span></span>
-<span id="cb16-13"><a href="#cb16-13" tabindex="-1"></a>  test <span class="ot">=</span> data_clean <span class="sc">%&gt;%</span> <span class="fu">filter</span>(fold <span class="sc">==</span> i)</span>
-<span id="cb16-14"><a href="#cb16-14" tabindex="-1"></a>  train <span class="ot">=</span> data_clean <span class="sc">%&gt;%</span> <span class="fu">filter</span>(fold <span class="sc">!=</span> i)</span>
-<span id="cb16-15"><a href="#cb16-15" tabindex="-1"></a>  </span>
-<span id="cb16-16"><a href="#cb16-16" tabindex="-1"></a>  <span class="co"># Creating model data variables </span></span>
-<span id="cb16-17"><a href="#cb16-17" tabindex="-1"></a>  x_var <span class="ot">=</span> <span class="fu">as.matrix</span>(train[, <span class="fu">colnames</span>(data_clean) <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;eTIV&quot;</span>, <span class="st">&quot;ASF&quot;</span>)])</span>
-<span id="cb16-18"><a href="#cb16-18" tabindex="-1"></a>  y_var <span class="ot">=</span> <span class="fu">as.matrix</span>(train[, <span class="fu">colnames</span>(data_clean) <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;Age&quot;</span>)])</span>
-<span id="cb16-19"><a href="#cb16-19" tabindex="-1"></a>  newx <span class="ot">=</span> <span class="fu">as.matrix</span>(test[, <span class="fu">colnames</span>(data_clean) <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;eTIV&quot;</span>, <span class="st">&quot;ASF&quot;</span>)])</span>
-<span id="cb16-20"><a href="#cb16-20" tabindex="-1"></a>  newy <span class="ot">=</span> <span class="fu">as.matrix</span>(test[, <span class="fu">colnames</span>(data_clean) <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;Age&quot;</span>)])</span>
-<span id="cb16-21"><a href="#cb16-21" tabindex="-1"></a>  </span>
-<span id="cb16-22"><a href="#cb16-22" tabindex="-1"></a>  <span class="co"># Fitting a ridge regression model</span></span>
-<span id="cb16-23"><a href="#cb16-23" tabindex="-1"></a>  lambda_seq <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
-<span id="cb16-24"><a href="#cb16-24" tabindex="-1"></a>    <span class="fu">seq</span>(<span class="dv">10</span>, <span class="dv">1</span>, <span class="sc">-</span><span class="dv">1</span>),        <span class="co"># From 10 to 1 (step of 1)</span></span>
-<span id="cb16-25"><a href="#cb16-25" tabindex="-1"></a>    <span class="fu">seq</span>(<span class="fl">0.9</span>, <span class="fl">0.1</span>, <span class="sc">-</span><span class="fl">0.1</span>),   <span class="co"># From 0.9 to 0.1 (step of 0.1)</span></span>
-<span id="cb16-26"><a href="#cb16-26" tabindex="-1"></a>    <span class="fu">seq</span>(<span class="fl">0.09</span>, <span class="fl">0.01</span>, <span class="sc">-</span><span class="fl">0.01</span>),<span class="co"># From 0.09 to 0.01 (step of 0.01)</span></span>
-<span id="cb16-27"><a href="#cb16-27" tabindex="-1"></a>    <span class="fu">seq</span>(<span class="fl">0.009</span>, <span class="fl">0.001</span>, <span class="sc">-</span><span class="fl">0.001</span>), <span class="co"># From 0.009 to 0.001 (step of 0.001)</span></span>
-<span id="cb16-28"><a href="#cb16-28" tabindex="-1"></a>    <span class="fu">seq</span>(<span class="fl">0.0009</span>, <span class="fl">0.0001</span>, <span class="sc">-</span><span class="fl">0.0001</span>), <span class="co"># From 0.0009 to 0.0001 (step of 0.0001)</span></span>
-<span id="cb16-29"><a href="#cb16-29" tabindex="-1"></a>    <span class="fu">seq</span>(<span class="fl">0.00009</span>, <span class="fl">0.00001</span>, <span class="sc">-</span><span class="fl">0.00001</span>), <span class="co"># From 0.00009 to 0.00001</span></span>
-<span id="cb16-30"><a href="#cb16-30" tabindex="-1"></a>    <span class="fu">seq</span>(<span class="fl">0.000009</span>, <span class="fl">0.000001</span>, <span class="sc">-</span><span class="fl">0.000001</span>), <span class="co"># From 0.000009 to 0.000001</span></span>
-<span id="cb16-31"><a href="#cb16-31" tabindex="-1"></a>    <span class="fu">seq</span>(<span class="fl">0.0000009</span>, <span class="fl">0.0000001</span>, <span class="sc">-</span><span class="fl">0.0000001</span>), <span class="co"># From 0.0000009 to 0.0000001</span></span>
-<span id="cb16-32"><a href="#cb16-32" tabindex="-1"></a>    <span class="dv">0</span></span>
-<span id="cb16-33"><a href="#cb16-33" tabindex="-1"></a>  )</span>
-<span id="cb16-34"><a href="#cb16-34" tabindex="-1"></a>  ridgeModel <span class="ot">&lt;-</span> <span class="fu">cv.glmnet</span>(x_var, y_var, <span class="at">alpha =</span> <span class="dv">0</span>, <span class="at">lambda =</span> lambda_seq)</span>
-<span id="cb16-35"><a href="#cb16-35" tabindex="-1"></a>  </span>
-<span id="cb16-36"><a href="#cb16-36" tabindex="-1"></a>  <span class="co"># Getting predictions</span></span>
-<span id="cb16-37"><a href="#cb16-37" tabindex="-1"></a>  test<span class="sc">$</span>preds <span class="ot">=</span> <span class="fu">predict</span>(ridgeModel, <span class="at">newx =</span> newx, <span class="at">s =</span> <span class="st">&quot;lambda.min&quot;</span>)</span>
-<span id="cb16-38"><a href="#cb16-38" tabindex="-1"></a>  </span>
-<span id="cb16-39"><a href="#cb16-39" tabindex="-1"></a>  <span class="co"># Storing values</span></span>
-<span id="cb16-40"><a href="#cb16-40" tabindex="-1"></a>  preds_eTIV <span class="ot">&lt;-</span> <span class="fu">c</span>(preds_eTIV, test<span class="sc">$</span>preds)</span>
-<span id="cb16-41"><a href="#cb16-41" tabindex="-1"></a>  test_y_eTIV <span class="ot">=</span> <span class="fu">c</span>(test_y_eTIV, newy)</span>
-<span id="cb16-42"><a href="#cb16-42" tabindex="-1"></a>  fold <span class="ot">&lt;-</span> <span class="fu">c</span>(fold, <span class="fu">rep</span>(i, <span class="fu">length</span>(test<span class="sc">$</span>preds)))</span>
-<span id="cb16-43"><a href="#cb16-43" tabindex="-1"></a>  </span>
-<span id="cb16-44"><a href="#cb16-44" tabindex="-1"></a>  <span class="co"># Storing minimum lambda used</span></span>
-<span id="cb16-45"><a href="#cb16-45" tabindex="-1"></a>  lambda <span class="ot">=</span> <span class="fu">c</span>(lambda, ridgeModel<span class="sc">$</span>lambda.min)</span>
-<span id="cb16-46"><a href="#cb16-46" tabindex="-1"></a>}</span>
-<span id="cb16-47"><a href="#cb16-47" tabindex="-1"></a></span>
-<span id="cb16-48"><a href="#cb16-48" tabindex="-1"></a></span>
-<span id="cb16-49"><a href="#cb16-49" tabindex="-1"></a></span>
-<span id="cb16-50"><a href="#cb16-50" tabindex="-1"></a><span class="co"># Creating a for loop for 5-fold cross validation</span></span>
-<span id="cb16-51"><a href="#cb16-51" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>folds){</span>
-<span id="cb16-52"><a href="#cb16-52" tabindex="-1"></a>  <span class="co"># Assigning data</span></span>
-<span id="cb16-53"><a href="#cb16-53" tabindex="-1"></a>  test <span class="ot">=</span> data_clean <span class="sc">%&gt;%</span> <span class="fu">filter</span>(fold <span class="sc">==</span> i)</span>
-<span id="cb16-54"><a href="#cb16-54" tabindex="-1"></a>  train <span class="ot">=</span> data_clean <span class="sc">%&gt;%</span> <span class="fu">filter</span>(fold <span class="sc">!=</span> i)</span>
-<span id="cb16-55"><a href="#cb16-55" tabindex="-1"></a>  </span>
-<span id="cb16-56"><a href="#cb16-56" tabindex="-1"></a>  <span class="co"># Creating model data variables </span></span>
-<span id="cb16-57"><a href="#cb16-57" tabindex="-1"></a>  x_var <span class="ot">=</span> <span class="fu">as.matrix</span>(train[, <span class="fu">colnames</span>(data_clean) <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;nWBV&quot;</span>, <span class="st">&quot;ASF&quot;</span>)])</span>
-<span id="cb16-58"><a href="#cb16-58" tabindex="-1"></a>  y_var <span class="ot">=</span> <span class="fu">as.matrix</span>(train[, <span class="fu">colnames</span>(data_clean) <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;Age&quot;</span>)])</span>
-<span id="cb16-59"><a href="#cb16-59" tabindex="-1"></a>  newx <span class="ot">=</span> <span class="fu">as.matrix</span>(test[, <span class="fu">colnames</span>(data_clean) <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;nWBV&quot;</span>, <span class="st">&quot;ASF&quot;</span>)])</span>
-<span id="cb16-60"><a href="#cb16-60" tabindex="-1"></a>  newy <span class="ot">=</span> <span class="fu">as.matrix</span>(test[, <span class="fu">colnames</span>(data_clean) <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;Age&quot;</span>)])</span>
-<span id="cb16-61"><a href="#cb16-61" tabindex="-1"></a>  </span>
-<span id="cb16-62"><a href="#cb16-62" tabindex="-1"></a>  <span class="co"># Fitting a ridge regression model</span></span>
-<span id="cb16-63"><a href="#cb16-63" tabindex="-1"></a>  lambda_seq <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
-<span id="cb16-64"><a href="#cb16-64" tabindex="-1"></a>    <span class="fu">seq</span>(<span class="dv">10</span>, <span class="dv">1</span>, <span class="sc">-</span><span class="dv">1</span>),        <span class="co"># From 10 to 1 (step of 1)</span></span>
-<span id="cb16-65"><a href="#cb16-65" tabindex="-1"></a>    <span class="fu">seq</span>(<span class="fl">0.9</span>, <span class="fl">0.1</span>, <span class="sc">-</span><span class="fl">0.1</span>),   <span class="co"># From 0.9 to 0.1 (step of 0.1)</span></span>
-<span id="cb16-66"><a href="#cb16-66" tabindex="-1"></a>    <span class="fu">seq</span>(<span class="fl">0.09</span>, <span class="fl">0.01</span>, <span class="sc">-</span><span class="fl">0.01</span>),<span class="co"># From 0.09 to 0.01 (step of 0.01)</span></span>
-<span id="cb16-67"><a href="#cb16-67" tabindex="-1"></a>    <span class="fu">seq</span>(<span class="fl">0.009</span>, <span class="fl">0.001</span>, <span class="sc">-</span><span class="fl">0.001</span>), <span class="co"># From 0.009 to 0.001 (step of 0.001)</span></span>
-<span id="cb16-68"><a href="#cb16-68" tabindex="-1"></a>    <span class="fu">seq</span>(<span class="fl">0.0009</span>, <span class="fl">0.0001</span>, <span class="sc">-</span><span class="fl">0.0001</span>), <span class="co"># From 0.0009 to 0.0001 (step of 0.0001)</span></span>
-<span id="cb16-69"><a href="#cb16-69" tabindex="-1"></a>    <span class="fu">seq</span>(<span class="fl">0.00009</span>, <span class="fl">0.00001</span>, <span class="sc">-</span><span class="fl">0.00001</span>), <span class="co"># From 0.00009 to 0.00001</span></span>
-<span id="cb16-70"><a href="#cb16-70" tabindex="-1"></a>    <span class="fu">seq</span>(<span class="fl">0.000009</span>, <span class="fl">0.000001</span>, <span class="sc">-</span><span class="fl">0.000001</span>), <span class="co"># From 0.000009 to 0.000001</span></span>
-<span id="cb16-71"><a href="#cb16-71" tabindex="-1"></a>    <span class="fu">seq</span>(<span class="fl">0.0000009</span>, <span class="fl">0.0000001</span>, <span class="sc">-</span><span class="fl">0.0000001</span>), <span class="co"># From 0.0000009 to 0.0000001</span></span>
-<span id="cb16-72"><a href="#cb16-72" tabindex="-1"></a>    <span class="dv">0</span></span>
-<span id="cb16-73"><a href="#cb16-73" tabindex="-1"></a>  )</span>
-<span id="cb16-74"><a href="#cb16-74" tabindex="-1"></a>  ridgeModel <span class="ot">&lt;-</span> <span class="fu">cv.glmnet</span>(x_var, y_var, <span class="at">alpha =</span> <span class="dv">0</span>, <span class="at">lambda =</span> lambda_seq)</span>
-<span id="cb16-75"><a href="#cb16-75" tabindex="-1"></a>  </span>
-<span id="cb16-76"><a href="#cb16-76" tabindex="-1"></a>  <span class="co"># Getting predictions</span></span>
-<span id="cb16-77"><a href="#cb16-77" tabindex="-1"></a>  test<span class="sc">$</span>preds <span class="ot">=</span> <span class="fu">predict</span>(ridgeModel, <span class="at">newx =</span> newx, <span class="at">s =</span> <span class="st">&quot;lambda.min&quot;</span>)</span>
-<span id="cb16-78"><a href="#cb16-78" tabindex="-1"></a>  </span>
-<span id="cb16-79"><a href="#cb16-79" tabindex="-1"></a>  <span class="co"># Storing values</span></span>
-<span id="cb16-80"><a href="#cb16-80" tabindex="-1"></a>  preds_nWBV <span class="ot">&lt;-</span> <span class="fu">c</span>(preds_nWBV, test<span class="sc">$</span>preds)</span>
-<span id="cb16-81"><a href="#cb16-81" tabindex="-1"></a>  test_y_nWBV <span class="ot">=</span> <span class="fu">c</span>(test_y_nWBV, newy)</span>
-<span id="cb16-82"><a href="#cb16-82" tabindex="-1"></a>  </span>
-<span id="cb16-83"><a href="#cb16-83" tabindex="-1"></a>  <span class="co"># Storing minimum lambda used</span></span>
-<span id="cb16-84"><a href="#cb16-84" tabindex="-1"></a>  lambda <span class="ot">=</span> <span class="fu">c</span>(lambda, ridgeModel<span class="sc">$</span>lambda.min)</span>
-<span id="cb16-85"><a href="#cb16-85" tabindex="-1"></a>}</span></code></pre></div>
-</div>
-<div id="applying-semicor-to-data-predictions" class="section level3" number="4.1.3">
-<h3><span class="header-section-number">4.1.3</span> Applying Semicor to
-Data Predictions</h3>
-<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a><span class="co"># Making sure all are a matrix</span></span>
-<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a>preds_eTIV <span class="ot">=</span> <span class="fu">as.matrix</span>(preds_eTIV)</span>
-<span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a>preds_nWBV <span class="ot">=</span> <span class="fu">as.matrix</span>(preds_nWBV)</span>
-<span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a>fold <span class="ot">=</span> <span class="fu">as.matrix</span>(fold)</span>
-<span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a></span>
-<span id="cb17-6"><a href="#cb17-6" tabindex="-1"></a></span>
-<span id="cb17-7"><a href="#cb17-7" tabindex="-1"></a><span class="co"># Gathering the estimates with one sample split</span></span>
-<span id="cb17-8"><a href="#cb17-8" tabindex="-1"></a>results <span class="ot">=</span> <span class="fu">sampleSplitOS</span>(test_y_eTIV, preds_eTIV, fold, preds_nWBV)</span></code></pre></div>
-</div>
-<div id="graphing-outputs" class="section level3" number="4.1.4">
-<h3><span class="header-section-number">4.1.4</span> Graphing
-Outputs</h3>
-<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a><span class="co"># Subsetting results to only estimates</span></span>
-<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a>toPlot <span class="ot">=</span> results<span class="sc">$</span>result <span class="sc">%&gt;%</span> <span class="fu">filter</span>(metric <span class="sc">==</span> <span class="st">&quot;yhat1&quot;</span> <span class="sc">|</span> metric <span class="sc">==</span> <span class="st">&quot;yhat2&quot;</span>)</span>
-<span id="cb18-3"><a href="#cb18-3" tabindex="-1"></a></span>
-<span id="cb18-4"><a href="#cb18-4" tabindex="-1"></a><span class="co"># Plotting results </span></span>
-<span id="cb18-5"><a href="#cb18-5" tabindex="-1"></a><span class="fu">ggplot</span>(toPlot, <span class="fu">aes</span>(<span class="at">x =</span> metric, <span class="at">y =</span> est)) <span class="sc">+</span></span>
-<span id="cb18-6"><a href="#cb18-6" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">position =</span> <span class="fu">position_dodge</span>(<span class="at">width =</span> <span class="fl">0.5</span>), <span class="at">size =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
-<span id="cb18-7"><a href="#cb18-7" tabindex="-1"></a>  <span class="fu">geom_errorbar</span>(<span class="fu">aes</span>(<span class="at">ymin =</span> LB, <span class="at">ymax =</span> UB),</span>
-<span id="cb18-8"><a href="#cb18-8" tabindex="-1"></a>                <span class="at">width =</span> <span class="fl">0.2</span>,</span>
-<span id="cb18-9"><a href="#cb18-9" tabindex="-1"></a>                <span class="at">position =</span> <span class="fu">position_dodge</span>(<span class="at">width =</span> <span class="fl">0.5</span>)) <span class="sc">+</span></span>
-<span id="cb18-10"><a href="#cb18-10" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span> </span>
-<span id="cb18-11"><a href="#cb18-11" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">45</span>, <span class="at">hjust=</span><span class="dv">1</span>)) <span class="sc">+</span> </span>
-<span id="cb18-12"><a href="#cb18-12" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="dv">0</span>, <span class="at">linetype =</span> <span class="st">&quot;dashed&quot;</span>, <span class="at">color =</span> <span class="st">&quot;black&quot;</span>) </span></code></pre></div>
-<p><img src="data:image/png;base64,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" width="672" /></p>
-</div>
-<div id="analysis" class="section level3" number="4.1.5">
-<h3><span class="header-section-number">4.1.5</span> Analysis</h3>
-<p>From these results, we see there is no significant improvement in
-Ridge Regression model performance for models using eTIV over nWBV
-imaging data.</p>
-</div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>mapa <span class="ot">&lt;-</span> <span class="cf">function</span>(y, y_hat, folds, <span class="at">y_hat2 =</span> <span class="cn">NULL</span>, <span class="at">level =</span> <span class="fl">0.95</span>){</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>  <span class="co"># Turning y into a matrix</span></span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>  y <span class="ot">=</span> <span class="fu">as.matrix</span>(y)</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>  </span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>  <span class="co"># Turning data frames into matrices</span></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">is.data.frame</span>(y_hat)){</span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>    y_hat <span class="ot">=</span> <span class="fu">as.matrix</span>(y_hat)</span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>  }</span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>  </span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">is.data.frame</span>(folds)){</span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a>    folds <span class="ot">=</span> <span class="fu">as.matrix</span>(folds)</span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>  }</span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a>  </span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">is.data.frame</span>(y_hat2)){</span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a>    y_hat2 <span class="ot">=</span> <span class="fu">as.matrix</span>(y_hat2)</span>
+<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a>  }</span>
+<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a>  </span>
+<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a>  <span class="co"># Sanity checks</span></span>
+<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">nrow</span>(y) <span class="sc">!=</span> <span class="fu">nrow</span>(y_hat) <span class="sc">|</span> <span class="fu">nrow</span>(y) <span class="sc">!=</span> <span class="fu">nrow</span>(folds) <span class="sc">|</span> <span class="fu">nrow</span>(folds) <span class="sc">!=</span> <span class="fu">nrow</span>(y_hat)){</span>
+<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a>    <span class="fu">stop</span>(<span class="st">&quot;y and y_hat must have the same amount of rows&quot;</span>)</span>
+<span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a>  }</span>
+<span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a>  </span>
+<span id="cb4-23"><a href="#cb4-23" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">ncol</span>(folds) <span class="sc">!=</span> <span class="fu">ncol</span>(y_hat)){</span>
+<span id="cb4-24"><a href="#cb4-24" tabindex="-1"></a>    <span class="fu">stop</span>(<span class="st">&quot;folds and y_hat must have the same column number&quot;</span>)</span>
+<span id="cb4-25"><a href="#cb4-25" tabindex="-1"></a>  }</span>
+<span id="cb4-26"><a href="#cb4-26" tabindex="-1"></a>  </span>
+<span id="cb4-27"><a href="#cb4-27" tabindex="-1"></a>  <span class="co"># Sanity checks for second mu</span></span>
+<span id="cb4-28"><a href="#cb4-28" tabindex="-1"></a>  <span class="cf">if</span>(<span class="sc">!</span><span class="fu">is.null</span>(y_hat2)){</span>
+<span id="cb4-29"><a href="#cb4-29" tabindex="-1"></a>      <span class="cf">if</span>(<span class="fu">ncol</span>(folds) <span class="sc">!=</span> <span class="fu">ncol</span>(y_hat2)){</span>
+<span id="cb4-30"><a href="#cb4-30" tabindex="-1"></a>      <span class="fu">stop</span>(<span class="st">&quot;folds and y_hat2 must have the same column number&quot;</span>)</span>
+<span id="cb4-31"><a href="#cb4-31" tabindex="-1"></a>    }</span>
+<span id="cb4-32"><a href="#cb4-32" tabindex="-1"></a>    </span>
+<span id="cb4-33"><a href="#cb4-33" tabindex="-1"></a>    <span class="cf">if</span>(<span class="fu">nrow</span>(y) <span class="sc">!=</span> <span class="fu">nrow</span>(y_hat2) <span class="sc">|</span> <span class="fu">nrow</span>(folds) <span class="sc">!=</span> <span class="fu">nrow</span>(y_hat2)){</span>
+<span id="cb4-34"><a href="#cb4-34" tabindex="-1"></a>      <span class="fu">stop</span>(<span class="st">&quot;y and y_hat2 must have the same amount of rows&quot;</span>)</span>
+<span id="cb4-35"><a href="#cb4-35" tabindex="-1"></a>    }</span>
+<span id="cb4-36"><a href="#cb4-36" tabindex="-1"></a>  }</span>
+<span id="cb4-37"><a href="#cb4-37" tabindex="-1"></a>  </span>
+<span id="cb4-38"><a href="#cb4-38" tabindex="-1"></a>  </span>
+<span id="cb4-39"><a href="#cb4-39" tabindex="-1"></a>  <span class="co"># number of sample splits</span></span>
+<span id="cb4-40"><a href="#cb4-40" tabindex="-1"></a>  n_splits <span class="ot">&lt;-</span> <span class="fu">ncol</span>(y_hat)</span>
+<span id="cb4-41"><a href="#cb4-41" tabindex="-1"></a>  </span>
+<span id="cb4-42"><a href="#cb4-42" tabindex="-1"></a></span>
+<span id="cb4-43"><a href="#cb4-43" tabindex="-1"></a>  <span class="co"># Gathering results </span></span>
+<span id="cb4-44"><a href="#cb4-44" tabindex="-1"></a>  res_list <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="fu">seq_len</span>(n_splits), <span class="cf">function</span>(i) {</span>
+<span id="cb4-45"><a href="#cb4-45" tabindex="-1"></a>    tmp <span class="ot">&lt;-</span> <span class="fu">mapaFolds</span>(y, y_hat[, i], folds[, i], y_hat2[,i], level)</span>
+<span id="cb4-46"><a href="#cb4-46" tabindex="-1"></a>    tmp<span class="sc">$</span>est<span class="sc">$</span>split <span class="ot">&lt;-</span> i</span>
+<span id="cb4-47"><a href="#cb4-47" tabindex="-1"></a>    </span>
+<span id="cb4-48"><a href="#cb4-48" tabindex="-1"></a>    <span class="fu">list</span>(</span>
+<span id="cb4-49"><a href="#cb4-49" tabindex="-1"></a>      <span class="at">est   =</span> tmp<span class="sc">$</span>est,</span>
+<span id="cb4-50"><a href="#cb4-50" tabindex="-1"></a>      <span class="at">fold1 =</span> tmp<span class="sc">$</span>fold.est,</span>
+<span id="cb4-51"><a href="#cb4-51" tabindex="-1"></a>      <span class="at">fold2 =</span> <span class="cf">if</span> (<span class="fu">is.null</span>(y_hat2)) <span class="cn">NULL</span> <span class="cf">else</span> tmp<span class="sc">$</span>fold.est2</span>
+<span id="cb4-52"><a href="#cb4-52" tabindex="-1"></a>    )</span>
+<span id="cb4-53"><a href="#cb4-53" tabindex="-1"></a>  })</span>
+<span id="cb4-54"><a href="#cb4-54" tabindex="-1"></a>  </span>
+<span id="cb4-55"><a href="#cb4-55" tabindex="-1"></a>  <span class="co"># Combining all results </span></span>
+<span id="cb4-56"><a href="#cb4-56" tabindex="-1"></a>  out <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb4-57"><a href="#cb4-57" tabindex="-1"></a>    <span class="at">est        =</span> <span class="fu">do.call</span>(rbind, <span class="fu">lapply</span>(res_list, <span class="st">`</span><span class="at">[[</span><span class="st">`</span>, <span class="st">&quot;est&quot;</span>)),</span>
+<span id="cb4-58"><a href="#cb4-58" tabindex="-1"></a>    <span class="at">est1.folds =</span> <span class="fu">do.call</span>(rbind, <span class="fu">lapply</span>(res_list, <span class="st">`</span><span class="at">[[</span><span class="st">`</span>, <span class="st">&quot;fold1&quot;</span>)),</span>
+<span id="cb4-59"><a href="#cb4-59" tabindex="-1"></a>    <span class="at">n          =</span> <span class="fu">length</span>(y),</span>
+<span id="cb4-60"><a href="#cb4-60" tabindex="-1"></a>    <span class="at">conf.level =</span> level</span>
+<span id="cb4-61"><a href="#cb4-61" tabindex="-1"></a>  )</span>
+<span id="cb4-62"><a href="#cb4-62" tabindex="-1"></a>  </span>
+<span id="cb4-63"><a href="#cb4-63" tabindex="-1"></a>  <span class="co"># Naming rows in est1.folds output to signal sample split number</span></span>
+<span id="cb4-64"><a href="#cb4-64" tabindex="-1"></a>  <span class="fu">rownames</span>(out<span class="sc">$</span>est1.folds) <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">&quot;ss&quot;</span>, <span class="fu">seq_len</span>(<span class="fu">nrow</span>(out<span class="sc">$</span>est1.folds)))</span>
+<span id="cb4-65"><a href="#cb4-65" tabindex="-1"></a>  </span>
+<span id="cb4-66"><a href="#cb4-66" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(y_hat2)) {</span>
+<span id="cb4-67"><a href="#cb4-67" tabindex="-1"></a>    <span class="co"># Adding fold2.vals </span></span>
+<span id="cb4-68"><a href="#cb4-68" tabindex="-1"></a>    out<span class="sc">$</span>est2.folds <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, <span class="fu">lapply</span>(res_list, <span class="st">`</span><span class="at">[[</span><span class="st">`</span>, <span class="st">&quot;fold2&quot;</span>))</span>
+<span id="cb4-69"><a href="#cb4-69" tabindex="-1"></a>    </span>
+<span id="cb4-70"><a href="#cb4-70" tabindex="-1"></a>    <span class="co"># Naming rows in est2.folds output to signal sample split number</span></span>
+<span id="cb4-71"><a href="#cb4-71" tabindex="-1"></a>    <span class="fu">rownames</span>(out<span class="sc">$</span>est2.folds) <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">&quot;ss&quot;</span>, <span class="fu">seq_len</span>(<span class="fu">nrow</span>(out<span class="sc">$</span>est2.folds)))</span>
+<span id="cb4-72"><a href="#cb4-72" tabindex="-1"></a>  }</span>
+<span id="cb4-73"><a href="#cb4-73" tabindex="-1"></a>  </span>
+<span id="cb4-74"><a href="#cb4-74" tabindex="-1"></a>  <span class="co"># Adding a summary data frame element</span></span>
+<span id="cb4-75"><a href="#cb4-75" tabindex="-1"></a>  out<span class="sc">$</span>est_summary <span class="ot">=</span> out<span class="sc">$</span>est <span class="sc">%&gt;%</span></span>
+<span id="cb4-76"><a href="#cb4-76" tabindex="-1"></a>    <span class="fu">group_by</span>(metric) <span class="sc">%&gt;%</span></span>
+<span id="cb4-77"><a href="#cb4-77" tabindex="-1"></a>    <span class="fu">summarise</span>(</span>
+<span id="cb4-78"><a href="#cb4-78" tabindex="-1"></a>      <span class="at">est =</span> <span class="fu">median</span>(est, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-79"><a href="#cb4-79" tabindex="-1"></a>      <span class="at">est_logit =</span> <span class="fu">median</span>(est_logit, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-80"><a href="#cb4-80" tabindex="-1"></a>      <span class="at">LB =</span> <span class="fu">median</span>(LB, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-81"><a href="#cb4-81" tabindex="-1"></a>      <span class="at">UB =</span> <span class="fu">median</span>(UB, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-82"><a href="#cb4-82" tabindex="-1"></a>      <span class="at">se =</span> <span class="fu">median</span>(se, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb4-83"><a href="#cb4-83" tabindex="-1"></a>    )</span>
+<span id="cb4-84"><a href="#cb4-84" tabindex="-1"></a>  </span>
+<span id="cb4-85"><a href="#cb4-85" tabindex="-1"></a>  <span class="co"># Returning output</span></span>
+<span id="cb4-86"><a href="#cb4-86" tabindex="-1"></a>  <span class="fu">return</span>(out)</span>
+<span id="cb4-87"><a href="#cb4-87" tabindex="-1"></a>}</span></code></pre></div>
 </div>
 </div>
 
